@@ -86,12 +86,12 @@ class ApiService {
   }
 
   static Future<BacktestResult> runBacktest({
-  required String token,
-  required String symbol,
-  required String timeframe,
-  required String strategyName,
-  required int fastPeriod,
-  required int slowPeriod,
+    required String token,
+    required String symbol,
+    required String timeframe,
+    required String strategyName,
+    required int fastPeriod,
+    required int slowPeriod,
   }) async {
     try {
       final body = {
@@ -123,10 +123,6 @@ class ApiService {
             body: jsonEncode(body),
           )
           .timeout(const Duration(seconds: 30));
-
-      print('BACKTEST REQUEST: ${jsonEncode(body)}');
-      print('BACKTEST STATUS: ${response.statusCode}');
-      print('BACKTEST BODY: ${response.body}');
 
       final data = _parseResponse(response);
 

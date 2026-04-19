@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../theme.dart';
+
 import '../services/api_service.dart';
 import '../services/demo_data.dart';
-import 'result_screen.dart';
+import '../theme.dart';
 import 'history_screen.dart';
 import 'login_screen.dart';
+import 'result_screen.dart';
 
 class BacktestScreen extends StatefulWidget {
   final String token;
@@ -486,11 +487,9 @@ class _BacktestScreenState extends State<BacktestScreen> {
                           color: Colors.white,
                           strokeWidth: 2,
                         )
-                      : Text(
-                          _isGuest
-                              ? 'Начать Бэктест'
-                              : 'Начать Бэктест',
-                          style: const TextStyle(
+                      : const Text(
+                          'Начать Бэктест',
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
