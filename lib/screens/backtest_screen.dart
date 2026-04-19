@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme.dart';
 import '../services/api_service.dart';
 import '../services/demo_data.dart';
 import 'result_screen.dart';
 import 'history_screen.dart';
+import 'login_screen.dart';
 
 class BacktestScreen extends StatefulWidget {
   final String token;
@@ -18,41 +20,41 @@ class BacktestScreen extends StatefulWidget {
 }
 
 class _BacktestScreenState extends State<BacktestScreen> {
-String _symbol = 'BTCUSDT';
-String _timeframe = '1h';
-String _strategy = 'SMA_Cross';
-double _fastPeriod = 10;
-double _slowPeriod = 50;
-double _riskTolerance = 0.5;
-bool _loading = false;
+  String _symbol = 'BTCUSDT';
+  String _timeframe = '1h';
+  String _strategy = 'SMA_Cross';
+  double _fastPeriod = 10;
+  double _slowPeriod = 50;
+  double _riskTolerance = 0.5;
+  bool _loading = false;
 
-final Map<String, String> _symbols = {
-  'BTCUSDT': 'Биткоин (BTC)',
-  'ETHUSDT': 'Эфириум (ETH)',
-  'SOLUSDT': 'Солана (SOL)',
-  'BNBUSDT': 'Бинанс Коин (BNB)',
-};
+  final Map<String, String> _symbols = {
+    'BTCUSDT': 'Биткоин (BTC)',
+    'ETHUSDT': 'Эфириум (ETH)',
+    'SOLUSDT': 'Солана (SOL)',
+    'BNBUSDT': 'Бинанс Коин (BNB)',
+  };
 
-final Map<String, String> _timeframes = {
-  '1h': '1 час',
-  '4h': '4 часа',
-  '1d': '1 день',
-  '1w': '1 неделя',
-};
+  final Map<String, String> _timeframes = {
+    '1h': '1 час',
+    '4h': '4 часа',
+    '1d': '1 день',
+    '1w': '1 неделя',
+  };
 
-final Map<String, String> _strategies = {
-  'SMA_Cross': 'Пересечение SMA',
-  'RSI': 'RSI (индекс силы)',
-  'MACD': 'MACD',
-  'Bollinger': 'Полосы Боллинджера',
-};
+  final Map<String, String> _strategies = {
+    'SMA_Cross': 'Пересечение SMA',
+    'RSI': 'RSI (индекс силы)',
+    'MACD': 'MACD',
+    'Bollinger': 'Полосы Боллинджера',
+  };
 
   bool get _isGuest => widget.token.isEmpty;
-  bool get _isDemo => widget.token.isEmpty;
 
   Future<void> _runBacktest() async {
-    if (_isDemo) {
+    if (_isGuest) {
       final result = DemoData.resultFor(_symbol);
+
       if (!mounted) return;
 
       Navigator.push(
@@ -62,17 +64,8 @@ final Map<String, String> _strategies = {
             result: result,
             symbol: _symbol,
             strategy: _strategy,
-            isDemo: _isDemo,
+            isDemo: true,
           ),
-        ),
-      );
-      return;
-    }
-
-    if (_isGuest) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Войдите в аккаунт для запуска бэктеста'),
         ),
       );
       return;
@@ -99,7 +92,7 @@ final Map<String, String> _strategies = {
             result: result,
             symbol: _symbol,
             strategy: _strategy,
-            isDemo: _isDemo,
+            isDemo: false,
           ),
         ),
       );
@@ -124,9 +117,24 @@ final Map<String, String> _strategies = {
       MaterialPageRoute(
         builder: (_) => HistoryScreen(
           token: widget.token,
-          isDemo: _isDemo,
+          isDemo: _isGuest,
         ),
       ),
+    );
+  }
+
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+    await prefs.remove('name');
+    await prefs.remove('email');
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
     );
   }
 
@@ -156,18 +164,20 @@ final Map<String, String> _strategies = {
   }
 
   Widget _chips(
-    List<String> items,
+    Map<String, String> items,
     String selected,
     ValueChanged<String> onTap,
   ) {
     return Wrap(
       spacing: 8,
       runSpacing: 6,
-      children: items.map((item) {
-        final isSelected = selected == item;
+      children: items.entries.map((entry) {
+        final key = entry.key;
+        final label = entry.value;
+        final isSelected = selected == key;
 
         return GestureDetector(
-          onTap: () => onTap(item),
+          onTap: () => onTap(key),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -179,7 +189,7 @@ final Map<String, String> _strategies = {
               ),
             ),
             child: Text(
-              _symbols[item] ?? item,
+              label,
               style: TextStyle(
                 color: isSelected ? Colors.white : AppTheme.textSecondary,
                 fontSize: 13,
@@ -267,12 +277,73 @@ final Map<String, String> _strategies = {
         underline: const SizedBox(),
         style: const TextStyle(color: AppTheme.textPrimary),
         items: items
-            .map((e) => DropdownMenuItem<String>(
-                  value: e,
-                  child: Text(_timeframes[e] ?? e),
-                ))
+            .map(
+              (e) => DropdownMenuItem<String>(
+                value: e,
+                child: Text(_timeframes[e] ?? e),
+              ),
+            )
             .toList(),
         onChanged: onChanged,
+      ),
+    );
+  }
+
+  Widget _buildDrawer() {
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: AppTheme.border),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    radius: 22,
+                    backgroundColor: AppTheme.card,
+                    child: Icon(
+                      Icons.person_outline,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _isGuest ? 'Гостевой режим' : 'Аккаунт',
+                      style: const TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('История'),
+              onTap: () {
+                Navigator.pop(context);
+                _openHistory();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Выход'),
+              onTap: () async {
+                Navigator.pop(context);
+                await _logout();
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -280,11 +351,18 @@ final Map<String, String> _strategies = {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: _buildDrawer(),
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.person_outline),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: Row(
           children: [
             const Text('Бэктест'),
-            if (_isDemo)
+            if (_isGuest)
               Container(
                 margin: const EdgeInsets.only(left: 8),
                 padding:
@@ -294,7 +372,7 @@ final Map<String, String> _strategies = {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text(
-                  'ДЕМО',
+                  'ГОСТЬ',
                   style: TextStyle(
                     color: AppTheme.purple,
                     fontSize: 11,
@@ -304,129 +382,123 @@ final Map<String, String> _strategies = {
               ),
           ],
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: _openHistory,
-          ),
-        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              height: 150,
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppTheme.border),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: CustomPaint(
-                  painter: _CandlePainter(),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                height: 150,
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: CustomPaint(
+                    painter: _CandlePainter(),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            _card(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Параметры стратегии',
-                    style: TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+              const SizedBox(height: 16),
+              _card(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Параметры стратегии',
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _sectionLabel('Символ'),
+                    _chips(
+                      _symbols,
+                      _symbol,
+                      (v) => setState(() => _symbol = v),
+                    ),
+                    const SizedBox(height: 12),
+                    _sectionLabel('Стратегия'),
+                    _chips(
+                      _strategies,
+                      _strategy,
+                      (v) => setState(() => _strategy = v),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildSlider(
+                      'Терпимость к риску',
+                      _riskTolerance,
+                      0,
+                      1,
+                      '${(_riskTolerance * 100).round()}%',
+                      (v) => setState(() => _riskTolerance = v),
+                    ),
+                    _buildSlider(
+                      'Быстрый период',
+                      _fastPeriod,
+                      2,
+                      50,
+                      _fastPeriod.round().toString(),
+                      (v) => setState(() => _fastPeriod = v),
+                    ),
+                    _buildSlider(
+                      'Медленный период',
+                      _slowPeriod,
+                      10,
+                      200,
+                      _slowPeriod.round().toString(),
+                      (v) => setState(() => _slowPeriod = v),
+                    ),
+                    const SizedBox(height: 8),
+                    _sectionLabel('Таймфрейм'),
+                    const SizedBox(height: 6),
+                    _dropdown(
+                      _timeframes.keys.toList(),
+                      _timeframe,
+                      (v) {
+                        if (v != null) {
+                          setState(() => _timeframe = v);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _runBacktest,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.purple,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _sectionLabel('Символ'),
-                  _chips(
-                    _symbols.keys.toList(),
-                    _symbol,
-                    (v) => setState(() => _symbol = v),
-                  ),
-                  const SizedBox(height: 12),
-                  _sectionLabel('Стратегия'),
-                  _chips(
-                    _strategies.keys.toList(),
-                    _strategy,
-                    (v) => setState(() => _strategy = v),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSlider(
-                    'Терпимость к риску',
-                    _riskTolerance,
-                    0,
-                    1,
-                    '${(_riskTolerance * 100).round()}%',
-                    (v) => setState(() => _riskTolerance = v),
-                  ),
-                  _buildSlider(
-                    'Быстрый период',
-                    _fastPeriod,
-                    2,
-                    50,
-                    _fastPeriod.round().toString(),
-                    (v) => setState(() => _fastPeriod = v),
-                  ),
-                  _buildSlider(
-                    'Медленный период',
-                    _slowPeriod,
-                    10,
-                    200,
-                    _slowPeriod.round().toString(),
-                    (v) => setState(() => _slowPeriod = v),
-                  ),
-                  const SizedBox(height: 8),
-                  _sectionLabel('Таймфрейм'),
-                  const SizedBox(height: 6),
-                  _dropdown(
-                    _timeframes.keys.toList(),
-                    _timeframe,
-                    (v) {
-                      if (v != null) {
-                        setState(() => _timeframe = v);
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _runBacktest,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.purple,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: _loading
-                    ? const CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      )
-                    : const Text(
-                        'Начать Бэктест',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                  child: _loading
+                      ? const CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        )
+                      : Text(
+                          _isGuest
+                              ? 'Начать Бэктест'
+                              : 'Начать Бэктест',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

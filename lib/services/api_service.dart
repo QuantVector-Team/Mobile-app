@@ -86,30 +86,47 @@ class ApiService {
   }
 
   static Future<BacktestResult> runBacktest({
-    required String token,
-    required String symbol,
-    required String timeframe,
-    required String strategyName,
-    required int fastPeriod,
-    required int slowPeriod,
+  required String token,
+  required String symbol,
+  required String timeframe,
+  required String strategyName,
+  required int fastPeriod,
+  required int slowPeriod,
   }) async {
     try {
+      final body = {
+        'platform': 'mobile',
+        'global': {
+          'symbol': symbol,
+          'timeframe': timeframe,
+          'start_time': 1672531200,
+          'end_time': 1704067200,
+          'start_balance': 1000.0,
+          'fee_percent': 0.1,
+          'fast_period': fastPeriod,
+          'slow_period': slowPeriod,
+        },
+        'strategy': {
+          'name': 'RSI_Strategy',
+          'parameters': {
+            'rsi_period': 14,
+            'buy_level': 30,
+            'sell_level': 70,
+          },
+        },
+      };
+
       final response = await http
           .post(
             Uri.parse('$baseUrl/backtest/run'),
             headers: _headers,
-            body: jsonEncode({
-              'token': token,
-              'symbol': symbol,
-              'timeframe': timeframe,
-              'strategy': {
-                'name': strategyName,
-                'fast_period': fastPeriod,
-                'slow_period': slowPeriod,
-              },
-            }),
+            body: jsonEncode(body),
           )
           .timeout(const Duration(seconds: 30));
+
+      print('BACKTEST REQUEST: ${jsonEncode(body)}');
+      print('BACKTEST STATUS: ${response.statusCode}');
+      print('BACKTEST BODY: ${response.body}');
 
       final data = _parseResponse(response);
 
@@ -141,12 +158,13 @@ class ApiService {
               'limit': limit,
             }),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 20));
 
       final data = _parseResponse(response);
 
       if (data['status'] == 'success') {
         final historyList = data['data'] as List<dynamic>? ?? [];
+
         return historyList
             .map((e) => HistoryItem.fromJson(e as Map<String, dynamic>))
             .toList();
@@ -159,9 +177,10 @@ class ApiService {
       throw Exception('Сервер долго не отвечает');
     } on FormatException {
       throw Exception('Некорректный ответ сервера');
+    } catch (e) {
+      throw Exception('Parsing history error: $e');
     }
   }
-
   static Map<String, dynamic> _parseResponse(http.Response response) {
     if (response.body.isEmpty) {
       throw Exception('Пустой ответ от сервера');

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme.dart';
 import '../services/api_service.dart';
-import '../services/demo_data.dart';
 import 'backtest_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -72,15 +71,6 @@ class _LoginScreenState extends State<LoginScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => const BacktestScreen(token: ''),
-      ),
-    );
-  }
-
-  void _demoLogin() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BacktestScreen(token: DemoData.demoUser.token),
       ),
     );
   }
@@ -159,7 +149,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 40),
-
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
@@ -197,7 +186,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-
                         TextField(
                           controller: _nameCtrl,
                           textInputAction: TextInputAction.next,
@@ -212,7 +200,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-
                         TextField(
                           controller: _emailCtrl,
                           keyboardType: TextInputType.emailAddress,
@@ -228,7 +215,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-
                         TextField(
                           controller: _passwordCtrl,
                           obscureText: _obscurePassword,
@@ -261,7 +247,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             }
                           },
                         ),
-
                         if (_error != null) ...[
                           const SizedBox(height: 12),
                           Container(
@@ -283,9 +268,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ],
-
                         const SizedBox(height: 20),
-
                         ElevatedButton(
                           onPressed: _loading ? null : _submit,
                           child: _loading
@@ -301,9 +284,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   _isLogin ? 'Войти' : 'Зарегистрироваться',
                                 ),
                         ),
-
                         const SizedBox(height: 8),
-
                         TextButton(
                           onPressed: _loading ? null : _guestLogin,
                           child: const Text(
@@ -315,51 +296,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                     ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  GestureDetector(
-                    onTap: _loading ? null : _demoLogin,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppTheme.purple),
-                        color: const Color(0x1A9B59FF),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.play_circle_outline,
-                            color: AppTheme.purple,
-                            size: 20,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Попробовать ДЕМО',
-                            style: TextStyle(
-                              color: AppTheme.purple,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  const Text(
-                    'Демо работает без интернета',
-                    style: TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 12,
-                    ),
-                    textAlign: TextAlign.center,
                   ),
                 ],
               ),

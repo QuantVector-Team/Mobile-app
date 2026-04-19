@@ -1,10 +1,9 @@
-import '../../models/backtest_result.dart';
-import '../../models/history_item.dart';
-import '../../models/user_model.dart';
+import '../models/backtest_result.dart';
+import '../models/history_item.dart';
+import '../models/user_model.dart';
 
-/// Демо-данные для работы приложения без сервера
 class DemoData {
-  static UserModel get demoUser => UserModel(token: 'demo_token', userId: 0);
+  static UserModel get demoUser => UserModel(token: 'demo_token');
 
   static BacktestResult get btcResult => BacktestResult(
         profitPercent: 22.5,
@@ -37,44 +36,22 @@ class DemoData {
       );
 
   static List<HistoryItem> get history => [
-        HistoryItem(
-          testId: 101,
-          date: '2024-05-20 14:30',
-          symbol: 'BTCUSDT',
-          strategyName: 'SMA Cross (10, 50)',
-          profitPercent: 22.5,
-        ),
-        HistoryItem(
-          testId: 102,
-          date: '2024-05-19 09:15',
-          symbol: 'ETHUSDT',
-          strategyName: 'RSI (14)',
-          profitPercent: -5.2,
-        ),
-        HistoryItem(
-          testId: 103,
-          date: '2024-05-18 17:00',
-          symbol: 'SOLUSDT',
-          strategyName: 'MACD (12, 26)',
-          profitPercent: 18.73,
-        ),
-        HistoryItem(
-          testId: 104,
-          date: '2024-05-17 11:45',
-          symbol: 'BNBUSDT',
-          strategyName: 'SMA Cross (10, 50)',
-          profitPercent: -3.4,
-        ),
-        HistoryItem(
-          testId: 105,
-          date: '2024-05-16 08:20',
-          symbol: 'BTCUSDT',
-          strategyName: 'Bollinger (20)',
-          profitPercent: 31.0,
-        ),
-      ];
+    HistoryItem(
+      testId: 101,
+      date: '2024-05-20 14:30',
+      symbol: 'BTCUSDT',
+      strategyName: 'SMA Cross (10, 50)',
+      profitPercent: 22.5,
+    ),
+    HistoryItem(
+      testId: 102,
+      date: '2024-05-19 09:15',
+      symbol: 'ETHUSDT',
+      strategyName: 'RSI (14)',
+      profitPercent: -5.2,
+    ),
+  ];
 
-  /// Возвращает демо-результат по символу
   static BacktestResult resultFor(String symbol) {
     if (symbol == 'ETHUSDT') return ethResult;
     return btcResult;

@@ -13,11 +13,13 @@ class HistoryItem {
     required this.profitPercent,
   });
 
-  factory HistoryItem.fromJson(Map<String, dynamic> json) => HistoryItem(
-        testId: json['test_id'] as int,
-        date: json['date'] as String,
-        symbol: json['symbol'] as String,
-        strategyName: json['strategy_name'] as String,
-        profitPercent: (json['profit_percent'] as num).toDouble(),
-      );
+  factory HistoryItem.fromJson(Map<String, dynamic> json) {
+    return HistoryItem(
+      testId: (json['test_id'] as num?)?.toInt() ?? 0,
+      date: (json['date'] ?? '').toString(),
+      symbol: (json['symbol'] ?? '').toString(),
+      strategyName: (json['strategy_name'] ?? '').toString(),
+      profitPercent: (json['profit_percent'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
 }
