@@ -4,7 +4,7 @@ class BacktestResult {
   final double winRate;
   final List<EquityPoint> equityCurve;
 
-  BacktestResult({
+  const BacktestResult({
     required this.profitPercent,
     required this.totalTrades,
     required this.winRate,
@@ -12,15 +12,15 @@ class BacktestResult {
   });
 
   factory BacktestResult.fromJson(Map<String, dynamic> json) {
-    final summary = json['summary'] as Map<String, dynamic>? ?? {};
-    final equityList = json['equity_curve'] as List<dynamic>? ?? [];
+    final summary = (json['summary'] as Map<String, dynamic>?) ?? {};
+    final chart = (json['chart_data'] as List?) ?? [];
 
     return BacktestResult(
       profitPercent: (summary['profit_percent'] as num?)?.toDouble() ?? 0.0,
       totalTrades: (summary['total_trades'] as num?)?.toInt() ?? 0,
-      winRate: (summary['win_rate'] as num?)?.toDouble() ?? 0.0,
-      equityCurve: equityList
-          .map((item) => EquityPoint.fromJson(item as Map<String, dynamic>))
+      winRate: 0.0,
+      equityCurve: chart
+          .map((e) => EquityPoint.fromJson(Map<String, dynamic>.from(e)))
           .toList(),
     );
   }
@@ -30,7 +30,7 @@ class EquityPoint {
   final int time;
   final double balance;
 
-  EquityPoint({
+  const EquityPoint({
     required this.time,
     required this.balance,
   });

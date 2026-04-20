@@ -29,6 +29,10 @@ class _BacktestScreenState extends State<BacktestScreen> {
   double _riskTolerance = 0.5;
   bool _loading = false;
 
+  String _name = '';
+  String _surname = '';
+  String _email = '';
+
   final Map<String, String> _symbols = {
     'BTCUSDT': 'Биткоин (BTC)',
     'ETHUSDT': 'Эфириум (ETH)',
@@ -51,6 +55,79 @@ class _BacktestScreenState extends State<BacktestScreen> {
   };
 
   bool get _isGuest => widget.token.isEmpty;
+
+  String get _displayName {
+    final value = '$_name $_surname'.trim();
+    if (value.isEmpty) return 'Аккаунт';
+    return value;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (!mounted) return;
+
+    setState(() {
+      _name = prefs.getString('name') ?? '';
+      _surname = prefs.getString('surname') ?? '';
+      _email = prefs.getString('email') ?? '';
+    });
+  }
+
+  String _serverStrategyName() {
+    switch (_strategy) {
+      case 'RSI':
+        return 'RSI_Strategy';
+      case 'MACD':
+        return 'MACD_Strategy';
+      case 'Bollinger':
+        return 'Bollinger_Strategy';
+      case 'SMA_Cross':
+      default:
+        return 'SMA_Cross';
+    }
+  }
+
+  Map<String, dynamic> _strategyParams() {
+    switch (_strategy) {
+      case 'RSI':
+        return {
+          'rsi_period': 14,
+          'fast_period': _fastPeriod.round(),
+          'slow_period': _slowPeriod.round(),
+          'buy_level': 30,
+          'sell_level': 70,
+        };
+      case 'MACD':
+        return {
+          'fast_period': _fastPeriod.round(),
+          'slow_period': _slowPeriod.round(),
+          'buy_level': 30,
+          'sell_level': 70,
+        };
+      case 'Bollinger':
+        return {
+          'fast_period': _fastPeriod.round(),
+          'slow_period': _slowPeriod.round(),
+          'buy_level': 30,
+          'sell_level': 70,
+        };
+      case 'SMA_Cross':
+      default:
+        return {
+          'fast_period': _fastPeriod.round(),
+          'slow_period': _slowPeriod.round(),
+          'buy_level': 30,
+          'sell_level': 70,
+        };
+    }
+  }
 
   Future<void> _runBacktest() async {
     if (_isGuest) {
@@ -79,9 +156,11 @@ class _BacktestScreenState extends State<BacktestScreen> {
         token: widget.token,
         symbol: _symbol,
         timeframe: _timeframe,
-        strategyName: _strategy,
-        fastPeriod: _fastPeriod.round(),
-        slowPeriod: _slowPeriod.round(),
+        startBalance: 1000.0,
+        feePercent: 0.1,
+        strategyName: _serverStrategyName(),
+        params: _strategyParams(),
+        needChart: true,
       );
 
       if (!mounted) return;
@@ -128,6 +207,7 @@ class _BacktestScreenState extends State<BacktestScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
     await prefs.remove('name');
+    await prefs.remove('surname');
     await prefs.remove('email');
 
     if (!mounted) return;
@@ -315,13 +395,29 @@ class _BacktestScreenState extends State<BacktestScreen> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      _isGuest ? 'Гостевой режим' : 'Аккаунт',
-                      style: const TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _isGuest ? 'Гостевой режим' : _displayName,
+                          style: const TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (!_isGuest && _email.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              _email,
+                              style: const TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -354,6 +450,7 @@ class _BacktestScreenState extends State<BacktestScreen> {
     return Scaffold(
       drawer: _buildDrawer(),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         leading: Builder(
           builder: (context) => IconButton(
             icon: const Icon(Icons.person_outline),

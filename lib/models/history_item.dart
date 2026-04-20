@@ -1,21 +1,20 @@
 class HistoryItem {
-  final int testId;
   final String date;
   final String symbol;
   final String strategyName;
   final double profitPercent;
 
-  HistoryItem({
-    required this.testId,
+  const HistoryItem({
     required this.date,
     required this.symbol,
     required this.strategyName,
     required this.profitPercent,
   });
 
+  String get name => strategyName;
+
   factory HistoryItem.fromJson(Map<String, dynamic> json) {
     return HistoryItem(
-      testId: (json['test_id'] as num?)?.toInt() ?? 0,
       date: (json['date'] ?? '').toString(),
       symbol: (json['symbol'] ?? '').toString(),
       strategyName: (json['strategy_name'] ?? '').toString(),

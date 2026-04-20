@@ -34,9 +34,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _loading = true;
       _error = null;
     });
+
     try {
       if (widget.isDemo) {
-        // Демо: используем локальные данные
         await Future.delayed(const Duration(milliseconds: 400));
         setState(() {
           _items = DemoData.history;
@@ -67,8 +67,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             if (widget.isDemo)
               Container(
                 margin: const EdgeInsets.only(left: 8),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: const Color(0x339B59FF),
                   borderRadius: BorderRadius.circular(6),
@@ -87,7 +86,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: AppTheme.purple))
+              child: CircularProgressIndicator(color: AppTheme.purple),
+            )
           : _error != null
               ? Center(
                   child: Padding(
@@ -95,13 +95,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.error_outline,
-                            color: AppTheme.red, size: 48),
+                        const Icon(
+                          Icons.error_outline,
+                          color: AppTheme.red,
+                          size: 48,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           _error!,
                           style: const TextStyle(
-                              color: AppTheme.textSecondary),
+                            color: AppTheme.textSecondary,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
@@ -115,14 +119,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 )
               : _items.isEmpty
                   ? const Center(
-                      child: Text('История пуста',
-                          style:
-                              TextStyle(color: AppTheme.textSecondary)))
+                      child: Text(
+                        'История пуста',
+                        style: TextStyle(color: AppTheme.textSecondary),
+                      ),
+                    )
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount: _items.length,
-                      itemBuilder: (_, i) =>
-                          _HistoryCard(item: _items[i]),
+                      itemBuilder: (_, i) => _HistoryCard(item: _items[i]),
                     ),
     );
   }
@@ -157,7 +162,7 @@ class _HistoryCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item.strategyName,
+                        item.name,
                         style: const TextStyle(
                           color: AppTheme.textPrimary,
                           fontSize: 15,
@@ -169,8 +174,9 @@ class _HistoryCard extends StatelessWidget {
                       Text(
                         item.symbol,
                         style: const TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 13),
+                          color: AppTheme.textSecondary,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -178,7 +184,9 @@ class _HistoryCard extends StatelessWidget {
                 Text(
                   item.date,
                   style: const TextStyle(
-                      color: AppTheme.textSecondary, fontSize: 12),
+                    color: AppTheme.textSecondary,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -189,36 +197,23 @@ class _HistoryCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(children: [
-                  Icon(
-                    isProfit
-                        ? Icons.trending_up
-                        : Icons.trending_down,
-                    color: profitColor,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${isProfit ? '+' : ''}${item.profitPercent.toStringAsFixed(2)}%',
-                    style: TextStyle(
+                Row(
+                  children: [
+                    Icon(
+                      isProfit ? Icons.trending_up : Icons.trending_down,
                       color: profitColor,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
+                      size: 18,
                     ),
-                  ),
-                ]),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.card,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'ID: ${item.testId}',
-                    style: const TextStyle(
-                        color: AppTheme.textSecondary, fontSize: 12),
-                  ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${isProfit ? '+' : ''}${item.profitPercent.toStringAsFixed(2)}%',
+                      style: TextStyle(
+                        color: profitColor,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

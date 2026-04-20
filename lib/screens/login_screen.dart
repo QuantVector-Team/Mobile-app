@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../theme.dart';
+
 import '../services/api_service.dart';
+import '../theme.dart';
 import 'backtest_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -13,6 +14,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _nameCtrl = TextEditingController();
+  final _surnameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
 
@@ -23,12 +25,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit() async {
     final name = _nameCtrl.text.trim();
+    final surname = _surnameCtrl.text.trim();
     final email = _emailCtrl.text.trim();
     final password = _passwordCtrl.text.trim();
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      setState(() => _error = 'Заполните все поля');
-      return;
+    if (_isLogin) {
+      if (email.isEmpty || password.isEmpty) {
+        setState(() => _error = 'Введите почту и пароль');
+        return;
+      }
+    } else {
+      if (name.isEmpty ||
+          surname.isEmpty ||
+          email.isEmpty ||
+          password.isEmpty) {
+        setState(() => _error = 'Заполните все поля');
+        return;
+      }
     }
 
     setState(() {
@@ -37,13 +50,28 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final user = _isLogin
-          ? await ApiService.login(name, email, password)
-          : await ApiService.register(name, email, password);
-
       final prefs = await SharedPreferences.getInstance();
+      final savedSurname = prefs.getString('surname') ?? '';
+
+      final user = _isLogin
+          ? await ApiService.login(
+              email: email,
+              password: password,
+              surname: savedSurname,
+            )
+          : await ApiService.register(
+              name: name,
+              surname: surname,
+              email: email,
+              password: password,
+            );
+
+      final finalName = _isLogin ? user.name : name;
+      final finalSurname = _isLogin ? savedSurname : surname;
+
       await prefs.setString('token', user.token);
-      await prefs.setString('name', name);
+      await prefs.setString('name', finalName);
+      await prefs.setString('surname', finalSurname);
       await prefs.setString('email', email);
 
       if (!mounted) return;
@@ -186,20 +214,36 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        TextField(
-                          controller: _nameCtrl,
-                          textInputAction: TextInputAction.next,
-                          autocorrect: false,
-                          enableSuggestions: false,
-                          style: const TextStyle(
-                            color: AppTheme.textPrimary,
+                        if (!_isLogin) ...[
+                          TextField(
+                            controller: _nameCtrl,
+                            textInputAction: TextInputAction.next,
+                            autocorrect: false,
+                            enableSuggestions: false,
+                            style: const TextStyle(
+                              color: AppTheme.textPrimary,
+                            ),
+                            decoration: _inputDecoration(
+                              hintText: 'Имя',
+                              icon: Icons.person_outline,
+                            ),
                           ),
-                          decoration: _inputDecoration(
-                            hintText: 'Имя пользователя',
-                            icon: Icons.person_outline,
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _surnameCtrl,
+                            textInputAction: TextInputAction.next,
+                            autocorrect: false,
+                            enableSuggestions: false,
+                            style: const TextStyle(
+                              color: AppTheme.textPrimary,
+                            ),
+                            decoration: _inputDecoration(
+                              hintText: 'Фамилия',
+                              icon: Icons.badge_outlined,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
+                        ],
                         TextField(
                           controller: _emailCtrl,
                           keyboardType: TextInputType.emailAddress,
@@ -210,7 +254,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: AppTheme.textPrimary,
                           ),
                           decoration: _inputDecoration(
-                            hintText: 'Email',
+                            hintText: 'Почта',
                             icon: Icons.email_outlined,
                           ),
                         ),
@@ -334,6 +378,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _surnameCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
