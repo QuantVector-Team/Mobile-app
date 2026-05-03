@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/user_model.dart';
 import '../services/api_service.dart';
 import '../services/demo_data.dart';
 import '../theme.dart';
@@ -9,11 +10,11 @@ import 'login_screen.dart';
 import 'result_screen.dart';
 
 class BacktestScreen extends StatefulWidget {
-  final String token;
+  final UserModel user;
 
   const BacktestScreen({
     super.key,
-    required this.token,
+    required this.user,
   });
 
   @override
@@ -23,113 +24,195 @@ class BacktestScreen extends StatefulWidget {
 class _BacktestScreenState extends State<BacktestScreen> {
   String _symbol = 'BTCUSDT';
   String _timeframe = '1h';
-  String _strategy = 'SMA_Cross';
-  double _fastPeriod = 10;
-  double _slowPeriod = 50;
-  double _riskTolerance = 0.5;
-  bool _loading = false;
+  String _strategy = 'SMA Cross';
 
-  String _name = '';
-  String _surname = '';
-  String _email = '';
+  bool _loading = false;
 
   final Map<String, String> _symbols = {
     'BTCUSDT': 'Биткоин (BTC)',
     'ETHUSDT': 'Эфириум (ETH)',
     'SOLUSDT': 'Солана (SOL)',
-    'BNBUSDT': 'Бинанс Коин (BNB)',
+    'BNBUSDT': 'BNB',
+    'XRPUSDT': 'XRP',
   };
 
   final Map<String, String> _timeframes = {
+    '1m': '1 минута',
+    '5m': '5 минут',
+    '15m': '15 минут',
     '1h': '1 час',
     '4h': '4 часа',
     '1d': '1 день',
     '1w': '1 неделя',
+    '2w': '2 недели',
+    '1M': '1 месяц',
   };
 
   final Map<String, String> _strategies = {
-    'SMA_Cross': 'Пересечение SMA',
-    'RSI': 'RSI (индекс силы)',
+    'SMA Cross': 'SMA Cross',
+    'Bollinger Bands': 'Bollinger Bands',
+    'RSI Oscillator': 'RSI Oscillator',
     'MACD': 'MACD',
-    'Bollinger': 'Полосы Боллинджера',
   };
 
-  bool get _isGuest => widget.token.isEmpty;
+  final Map<String, TextEditingController> _controllers = {
+    'fast_period': TextEditingController(text: '10'),
+    'slow_period': TextEditingController(text: '50'),
+    'window_size': TextEditingController(text: '20'),
+    'deviation': TextEditingController(text: '2.0'),
+    'period': TextEditingController(text: '14'),
+    'buy_level': TextEditingController(text: '30'),
+    'sell_level': TextEditingController(text: '70'),
+    'signal_period': TextEditingController(text: '9'),
+  };
 
-  String get _displayName {
-    final value = '$_name $_surname'.trim();
-    if (value.isEmpty) return 'Аккаунт';
-    return value;
-  }
+  bool get _isGuest => widget.user.isGuest;
 
   @override
-  void initState() {
-    super.initState();
-    _loadUser();
-  }
-
-  Future<void> _loadUser() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    if (!mounted) return;
-
-    setState(() {
-      _name = prefs.getString('name') ?? '';
-      _surname = prefs.getString('surname') ?? '';
-      _email = prefs.getString('email') ?? '';
-    });
+  void dispose() {
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   String _serverStrategyName() {
     switch (_strategy) {
-      case 'RSI':
-        return 'RSI_Strategy';
-      case 'MACD':
-        return 'MACD_Strategy';
-      case 'Bollinger':
-        return 'Bollinger_Strategy';
-      case 'SMA_Cross':
-      default:
+      case 'SMA Cross':
         return 'SMA_Cross';
+      case 'Bollinger Bands':
+        return 'Bollinger_Bands';
+      case 'RSI Oscillator':
+        return 'RSI_Oscillator';
+      case 'MACD':
+        return 'MACD';
+      default:
+        return _strategy.replaceAll(' ', '_');
     }
   }
 
   Map<String, dynamic> _strategyParams() {
     switch (_strategy) {
-      case 'RSI':
+      case 'SMA Cross':
         return {
-          'rsi_period': 14,
-          'fast_period': _fastPeriod.round(),
-          'slow_period': _slowPeriod.round(),
-          'buy_level': 30,
-          'sell_level': 70,
+          'fast_period': int.parse(_controllers['fast_period']!.text),
+          'slow_period': int.parse(_controllers['slow_period']!.text),
         };
+
+      case 'Bollinger Bands':
+        return {
+          'window_size': int.parse(_controllers['window_size']!.text),
+          'deviation': double.parse(
+            _controllers['deviation']!.text.replaceAll(',', '.'),
+          ),
+        };
+
+      case 'RSI Oscillator':
+        return {
+          'period': int.parse(_controllers['period']!.text),
+          'buy_level': int.parse(_controllers['buy_level']!.text),
+          'sell_level': int.parse(_controllers['sell_level']!.text),
+        };
+
       case 'MACD':
         return {
-          'fast_period': _fastPeriod.round(),
-          'slow_period': _slowPeriod.round(),
-          'buy_level': 30,
-          'sell_level': 70,
+          'fast_period': int.parse(_controllers['fast_period']!.text),
+          'slow_period': int.parse(_controllers['slow_period']!.text),
+          'signal_period': int.parse(_controllers['signal_period']!.text),
         };
-      case 'Bollinger':
-        return {
-          'fast_period': _fastPeriod.round(),
-          'slow_period': _slowPeriod.round(),
-          'buy_level': 30,
-          'sell_level': 70,
-        };
-      case 'SMA_Cross':
+
       default:
-        return {
-          'fast_period': _fastPeriod.round(),
-          'slow_period': _slowPeriod.round(),
-          'buy_level': 30,
-          'sell_level': 70,
-        };
+        return {};
+    }
+  }
+
+  String? _validateStrategy() {
+    try {
+      final params = _strategyParams();
+
+      switch (_strategy) {
+        case 'SMA Cross':
+          final fast = params['fast_period'] as int;
+          final slow = params['slow_period'] as int;
+
+          if (fast < 5 || fast > 50) {
+            return 'Быстрый период должен быть от 5 до 50';
+          }
+          if (slow < 50 || slow > 200) {
+            return 'Медленный период должен быть от 50 до 200';
+          }
+          if (fast >= slow) {
+            return 'Быстрый период должен быть меньше медленного';
+          }
+          break;
+
+        case 'Bollinger Bands':
+          final windowSize = params['window_size'] as int;
+          final deviation = params['deviation'] as double;
+
+          if (windowSize < 10 || windowSize > 100) {
+            return 'Размер окна должен быть от 10 до 100';
+          }
+          if (deviation < 1.0 || deviation > 3.0) {
+            return 'Отклонение должно быть от 1.0 до 3.0';
+          }
+          break;
+
+        case 'RSI Oscillator':
+          final period = params['period'] as int;
+          final buy = params['buy_level'] as int;
+          final sell = params['sell_level'] as int;
+
+          if (period < 5 || period > 30) {
+            return 'Период должен быть от 5 до 30';
+          }
+          if (buy < 10 || buy > 40) {
+            return 'Уровень покупки должен быть от 10 до 40';
+          }
+          if (sell < 60 || sell > 90) {
+            return 'Уровень продажи должен быть от 60 до 90';
+          }
+          if (buy >= sell) {
+            return 'Уровень покупки должен быть меньше уровня продажи';
+          }
+          break;
+
+        case 'MACD':
+          final fast = params['fast_period'] as int;
+          final slow = params['slow_period'] as int;
+          final signal = params['signal_period'] as int;
+
+          if (fast < 5 || fast > 50) {
+            return 'Быстрая EMA должна быть от 5 до 50';
+          }
+          if (slow < 20 || slow > 100) {
+            return 'Медленная EMA должна быть от 20 до 100';
+          }
+          if (signal < 5 || signal > 30) {
+            return 'Сигнальная линия должна быть от 5 до 30';
+          }
+          if (fast >= slow) {
+            return 'Быстрая EMA должна быть меньше медленной EMA';
+          }
+          break;
+      }
+
+      return null;
+    } catch (_) {
+      return 'Проверь параметры стратегии. Все поля должны быть числами';
     }
   }
 
   Future<void> _runBacktest() async {
+    final error = _validateStrategy();
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+      return;
+    }
+
     if (_isGuest) {
       final result = DemoData.resultFor(_symbol);
 
@@ -153,14 +236,13 @@ class _BacktestScreenState extends State<BacktestScreen> {
 
     try {
       final result = await ApiService.runBacktest(
-        token: widget.token,
+        token: widget.user.token,
         symbol: _symbol,
         timeframe: _timeframe,
         startBalance: 1000.0,
         feePercent: 0.1,
         strategyName: _serverStrategyName(),
         params: _strategyParams(),
-        needChart: true,
       );
 
       if (!mounted) return;
@@ -181,7 +263,7 @@ class _BacktestScreenState extends State<BacktestScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
         ),
       );
     } finally {
@@ -196,7 +278,7 @@ class _BacktestScreenState extends State<BacktestScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => HistoryScreen(
-          token: widget.token,
+          token: widget.user.token,
           isDemo: _isGuest,
         ),
       ),
@@ -205,9 +287,9 @@ class _BacktestScreenState extends State<BacktestScreen> {
 
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
+
     await prefs.remove('token');
-    await prefs.remove('name');
-    await prefs.remove('surname');
+    await prefs.remove('login');
     await prefs.remove('email');
 
     if (!mounted) return;
@@ -215,7 +297,7 @@ class _BacktestScreenState extends State<BacktestScreen> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
+      (_) => false,
     );
   }
 
@@ -244,103 +326,8 @@ class _BacktestScreenState extends State<BacktestScreen> {
     );
   }
 
-  Widget _chips(
+  Widget _dropdownMap(
     Map<String, String> items,
-    String selected,
-    ValueChanged<String> onTap,
-  ) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 6,
-      children: items.entries.map((entry) {
-        final key = entry.key;
-        final label = entry.value;
-        final isSelected = selected == key;
-
-        return GestureDetector(
-          onTap: () => onTap(key),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: isSelected ? AppTheme.purple : AppTheme.card,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isSelected ? AppTheme.purple : AppTheme.border,
-              ),
-            ),
-            child: Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : AppTheme.textSecondary,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildSlider(
-    String sliderName,
-    double sliderValue,
-    double sliderMin,
-    double sliderMax,
-    String sliderDisplay,
-    ValueChanged<double> onChanged,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 115,
-            child: Text(
-              sliderName,
-              style: const TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 13,
-              ),
-            ),
-          ),
-          Expanded(
-            child: SliderTheme(
-              data: SliderThemeData(
-                activeTrackColor: AppTheme.purple,
-                inactiveTrackColor: AppTheme.border,
-                thumbColor: AppTheme.purple,
-                thumbShape: const RoundSliderThumbShape(
-                  enabledThumbRadius: 8,
-                ),
-                overlayShape: SliderComponentShape.noOverlay,
-              ),
-              child: Slider(
-                value: sliderValue,
-                min: sliderMin,
-                max: sliderMax,
-                onChanged: onChanged,
-              ),
-            ),
-          ),
-          SizedBox(
-            width: 44,
-            child: Text(
-              sliderDisplay,
-              style: const TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 13,
-              ),
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _dropdown(
-    List<String> items,
     String value,
     ValueChanged<String?> onChanged,
   ) {
@@ -357,17 +344,106 @@ class _BacktestScreenState extends State<BacktestScreen> {
         dropdownColor: AppTheme.card,
         underline: const SizedBox(),
         style: const TextStyle(color: AppTheme.textPrimary),
-        items: items
+        items: items.entries
             .map(
-              (e) => DropdownMenuItem<String>(
-                value: e,
-                child: Text(_timeframes[e] ?? e),
+              (entry) => DropdownMenuItem<String>(
+                value: entry.key,
+                child: Text(entry.value),
               ),
             )
             .toList(),
         onChanged: onChanged,
       ),
     );
+  }
+
+  Widget _numberField({
+    required String label,
+    required String keyName,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: _controllers[keyName],
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        style: const TextStyle(color: AppTheme.textPrimary),
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+    );
+  }
+
+  Widget _strategyFields() {
+    switch (_strategy) {
+      case 'SMA Cross':
+        return Column(
+          children: [
+            _numberField(
+              label: 'Быстрый период (fast_period 5-50)',
+              keyName: 'fast_period',
+            ),
+            _numberField(
+              label: 'Медленный период (slow_period 50-200)',
+              keyName: 'slow_period',
+            ),
+          ],
+        );
+
+      case 'Bollinger Bands':
+        return Column(
+          children: [
+            _numberField(
+              label: 'Размер окна (window_size 10-100)',
+              keyName: 'window_size',
+            ),
+            _numberField(
+              label: 'Отклонение (deviation 1.0-3.0)',
+              keyName: 'deviation',
+            ),
+          ],
+        );
+
+      case 'RSI Oscillator':
+        return Column(
+          children: [
+            _numberField(
+              label: 'Период (period 5-30)',
+              keyName: 'period',
+            ),
+            _numberField(
+              label: 'Уровень покупки (buy_level 10-40)',
+              keyName: 'buy_level',
+            ),
+            _numberField(
+              label: 'Уровень продажи (sell_level 60-90)',
+              keyName: 'sell_level',
+            ),
+          ],
+        );
+
+      case 'MACD':
+        return Column(
+          children: [
+            _numberField(
+              label: 'Быстрая EMA (fast_period 5-50)',
+              keyName: 'fast_period',
+            ),
+            _numberField(
+              label: 'Медленная EMA (slow_period 20-100)',
+              keyName: 'slow_period',
+            ),
+            _numberField(
+              label: 'Сигнальная линия (signal_period 5-30)',
+              keyName: 'signal_period',
+            ),
+          ],
+        );
+
+      default:
+        return const SizedBox.shrink();
+    }
   }
 
   Widget _buildDrawer() {
@@ -399,18 +475,18 @@ class _BacktestScreenState extends State<BacktestScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _isGuest ? 'Гостевой режим' : _displayName,
+                          _isGuest ? 'Гостевой режим' : widget.user.fullName,
                           style: const TextStyle(
                             color: AppTheme.textPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        if (!_isGuest && _email.isNotEmpty)
+                        if (!_isGuest && widget.user.email.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
-                              _email,
+                              widget.user.email,
                               style: const TextStyle(
                                 color: AppTheme.textSecondary,
                                 fontSize: 13,
@@ -463,8 +539,7 @@ class _BacktestScreenState extends State<BacktestScreen> {
             if (_isGuest)
               Container(
                 margin: const EdgeInsets.only(left: 8),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: const Color(0x339B59FF),
                   borderRadius: BorderRadius.circular(6),
@@ -483,7 +558,7 @@ class _BacktestScreenState extends State<BacktestScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -515,56 +590,37 @@ class _BacktestScreenState extends State<BacktestScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _sectionLabel('Символ'),
-                    _chips(
+                    _sectionLabel('Криптовалюта'),
+                    _dropdownMap(
                       _symbols,
                       _symbol,
-                      (v) => setState(() => _symbol = v),
+                      (v) {
+                        if (v == null) return;
+                        setState(() => _symbol = v);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _sectionLabel('Таймфрейм'),
+                    _dropdownMap(
+                      _timeframes,
+                      _timeframe,
+                      (v) {
+                        if (v == null) return;
+                        setState(() => _timeframe = v);
+                      },
                     ),
                     const SizedBox(height: 12),
                     _sectionLabel('Стратегия'),
-                    _chips(
+                    _dropdownMap(
                       _strategies,
                       _strategy,
-                      (v) => setState(() => _strategy = v),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildSlider(
-                      'Терпимость к риску',
-                      _riskTolerance,
-                      0,
-                      1,
-                      '${(_riskTolerance * 100).round()}%',
-                      (v) => setState(() => _riskTolerance = v),
-                    ),
-                    _buildSlider(
-                      'Быстрый период',
-                      _fastPeriod,
-                      2,
-                      50,
-                      _fastPeriod.round().toString(),
-                      (v) => setState(() => _fastPeriod = v),
-                    ),
-                    _buildSlider(
-                      'Медленный период',
-                      _slowPeriod,
-                      10,
-                      200,
-                      _slowPeriod.round().toString(),
-                      (v) => setState(() => _slowPeriod = v),
-                    ),
-                    const SizedBox(height: 8),
-                    _sectionLabel('Таймфрейм'),
-                    const SizedBox(height: 6),
-                    _dropdown(
-                      _timeframes.keys.toList(),
-                      _timeframe,
                       (v) {
-                        if (v != null) {
-                          setState(() => _timeframe = v);
-                        }
+                        if (v == null) return;
+                        setState(() => _strategy = v);
                       },
                     ),
+                    const SizedBox(height: 16),
+                    _strategyFields(),
                   ],
                 ),
               ),

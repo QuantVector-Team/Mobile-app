@@ -11,16 +11,31 @@ class BacktestResult {
     required this.equityCurve,
   });
 
+  // Для совместимости
+  List<EquityPoint> get chartData => equityCurve;
+
   factory BacktestResult.fromJson(Map<String, dynamic> json) {
-    final summary = (json['summary'] as Map<String, dynamic>?) ?? {};
-    final chart = (json['chart_data'] as List?) ?? [];
+    // 🔥 поддержка 2 форматов
+    final summary = json['summary'] is Map<String, dynamic>
+        ? json['summary'] as Map<String, dynamic>
+        : json;
+
+    // 🔥 поддержка разных названий графика
+    final chart = json['chart_data'] ??
+        json['equity_curve'] ??
+        [];
 
     return BacktestResult(
       profitPercent: (summary['profit_percent'] as num?)?.toDouble() ?? 0.0,
       totalTrades: (summary['total_trades'] as num?)?.toInt() ?? 0,
-      winRate: 0.0,
-      equityCurve: chart
-          .map((e) => EquityPoint.fromJson(Map<String, dynamic>.from(e)))
+      winRate: (summary['win_rate'] as num?)?.toDouble() ?? 0.0,
+
+      equityCurve: (chart as List)
+          .map(
+            (e) => EquityPoint.fromJson(
+              Map<String, dynamic>.from(e),
+            ),
+          )
           .toList(),
     );
   }
@@ -42,3 +57,6 @@ class EquityPoint {
     );
   }
 }
+
+// алиас (если где-то используется)
+typedef ChartPoint = EquityPoint;

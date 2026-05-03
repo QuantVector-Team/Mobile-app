@@ -65,6 +65,20 @@ class DemoData {
         ],
       );
 
+  static BacktestResult get xrpResult => const BacktestResult(
+        profitPercent: 3.2,
+        totalTrades: 28,
+        winRate: 51.7,
+        equityCurve: [
+          EquityPoint(time: 1672531200, balance: 1000.0),
+          EquityPoint(time: 1672617600, balance: 1008.0),
+          EquityPoint(time: 1672704000, balance: 997.0),
+          EquityPoint(time: 1672790400, balance: 1014.0),
+          EquityPoint(time: 1672876800, balance: 1022.0),
+          EquityPoint(time: 1672963200, balance: 1032.0),
+        ],
+      );
+
   static List<HistoryItem> get history => const [
         HistoryItem(
           date: '2024-05-20',
@@ -75,19 +89,19 @@ class DemoData {
         HistoryItem(
           date: '2024-05-19',
           symbol: 'ETHUSDT',
-          strategyName: 'RSI_Strategy',
+          strategyName: 'RSI_Oscillator',
           profitPercent: -5.2,
         ),
         HistoryItem(
           date: '2024-05-18',
           symbol: 'SOLUSDT',
-          strategyName: 'MACD_Strategy',
+          strategyName: 'MACD',
           profitPercent: 11.8,
         ),
         HistoryItem(
           date: '2024-05-17',
           symbol: 'BNBUSDT',
-          strategyName: 'Bollinger_Strategy',
+          strategyName: 'Bollinger_Bands',
           profitPercent: 6.4,
         ),
       ];
@@ -100,6 +114,8 @@ class DemoData {
         return solResult;
       case 'BNBUSDT':
         return bnbResult;
+      case 'XRPUSDT':
+        return xrpResult;
       case 'BTCUSDT':
       default:
         return btcResult;

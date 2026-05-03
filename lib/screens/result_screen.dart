@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../theme.dart';
+
 import '../models/backtest_result.dart';
+import '../theme.dart';
 
 class ResultScreen extends StatelessWidget {
   final BacktestResult result;
@@ -22,7 +23,6 @@ class ResultScreen extends StatelessWidget {
     final isProfit = result.profitPercent >= 0;
     final profitColor = isProfit ? AppTheme.green : AppTheme.red;
 
-    // Подготавливаем точки для графика
     final spots = result.equityCurve
         .asMap()
         .entries
@@ -33,12 +33,11 @@ class ResultScreen extends StatelessWidget {
       appBar: AppBar(
         title: Row(
           children: [
-            Text('$symbol — $strategy'),
+            Expanded(child: Text('$symbol — $strategy')),
             if (isDemo)
               Container(
                 margin: const EdgeInsets.only(left: 8),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: const Color(0x339B59FF),
                   borderRadius: BorderRadius.circular(6),
@@ -56,26 +55,25 @@ class ResultScreen extends StatelessWidget {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Главная карточка прибыли
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: AppTheme.surface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                    color: Color.fromARGB(
-                        77, profitColor.r.round(), profitColor.g.round(), profitColor.b.round())),
+                border: Border.all(color: AppTheme.border),
               ),
               child: Column(
                 children: [
                   const Text(
                     'Результат',
                     style: TextStyle(
-                        color: AppTheme.textSecondary, fontSize: 13),
+                      color: AppTheme.textSecondary,
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -89,14 +87,16 @@ class ResultScreen extends StatelessWidget {
                   const Text(
                     'Общая доходность',
                     style: TextStyle(
-                        color: AppTheme.textSecondary, fontSize: 13),
+                      color: AppTheme.textSecondary,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 16),
 
-            // Статистика
             Row(
               children: [
                 Expanded(
@@ -116,9 +116,9 @@ class ResultScreen extends StatelessWidget {
                 ),
               ],
             ),
+
             const SizedBox(height: 16),
 
-            // График equity curve
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -139,66 +139,78 @@ class ResultScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
-                    height: 200,
-                    child: LineChart(
-                      LineChartData(
-                        gridData: FlGridData(
-                          show: true,
-                          getDrawingHorizontalLine: (_) => const FlLine(
-                            color: AppTheme.border,
-                            strokeWidth: 0.5,
-                          ),
-                          getDrawingVerticalLine: (_) => const FlLine(
-                            color: AppTheme.border,
-                            strokeWidth: 0.5,
-                          ),
-                        ),
-                        titlesData: FlTitlesData(
-                          leftTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              reservedSize: 56,
-                              getTitlesWidget: (value, meta) => Text(
-                                '\$${value.round()}',
-                                style: const TextStyle(
-                                  color: AppTheme.textSecondary,
-                                  fontSize: 10,
-                                ),
+                    height: 220,
+                    child: spots.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Нет данных для графика',
+                              style: TextStyle(
+                                color: AppTheme.textSecondary,
                               ),
                             ),
-                          ),
-                          bottomTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                          rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                          topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                        ),
-                        borderData: FlBorderData(show: false),
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: spots,
-                            isCurved: true,
-                            color: profitColor,
-                            barWidth: 2,
-                            dotData: const FlDotData(show: false),
-                            belowBarData: BarAreaData(
-                              show: true,
-                              color: isProfit
-                                  ? const Color(0x332ECC71)
-                                  : const Color(0x33E74C3C),
+                          )
+                        : LineChart(
+                            LineChartData(
+                              gridData: FlGridData(
+                                show: true,
+                                getDrawingHorizontalLine: (_) => const FlLine(
+                                  color: AppTheme.border,
+                                  strokeWidth: 0.5,
+                                ),
+                                getDrawingVerticalLine: (_) => const FlLine(
+                                  color: AppTheme.border,
+                                  strokeWidth: 0.5,
+                                ),
+                              ),
+                              titlesData: FlTitlesData(
+                                leftTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 56,
+                                    getTitlesWidget: (value, meta) {
+                                      return Text(
+                                        '\$${value.round()}',
+                                        style: const TextStyle(
+                                          color: AppTheme.textSecondary,
+                                          fontSize: 10,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                bottomTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                rightTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                topTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                              ),
+                              borderData: FlBorderData(show: false),
+                              lineBarsData: [
+                                LineChartBarData(
+                                  spots: spots,
+                                  isCurved: true,
+                                  color: profitColor,
+                                  barWidth: 2,
+                                  dotData: const FlDotData(show: false),
+                                  belowBarData: BarAreaData(
+                                    show: true,
+                                    color: isProfit
+                                        ? const Color(0x332ECC71)
+                                        : const Color(0x33E74C3C),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 24),
 
             ElevatedButton(
@@ -211,34 +223,41 @@ class ResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _statCard(String label, String value, IconData icon) =>
-      Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppTheme.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
+  Widget _statCard(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
               Icon(icon, color: AppTheme.purple, size: 16),
               const SizedBox(width: 6),
-              Text(label,
-                  style: const TextStyle(
-                      color: AppTheme.textSecondary, fontSize: 12)),
-            ]),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 12,
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
+  }
 }

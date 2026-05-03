@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:http/http.dart' as http;
 
 import '../models/backtest_result.dart';
@@ -22,42 +21,35 @@ class ApiService {
       throw Exception('Нет соединения с сервером');
     } on TimeoutException {
       throw Exception('Сервер долго не отвечает');
-    } on FormatException {
-      throw Exception('Некорректный ответ сервера');
     } catch (e) {
       throw Exception(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 
   static Future<UserModel> register({
-    required String name,
-    required String surname,
+    required String login,
     required String email,
     required String password,
   }) async {
     return _handleRequest(() async {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/register'),
-            headers: _headers,
-            body: jsonEncode({
-              'platform': 'mobile',
-              'auth_data': {
-                'email': email,
-                'password': password,
-                'user_name': name,
-                'user_surname': surname,
-              },
-            }),
-          )
-          .timeout(const Duration(seconds: 15));
+      final response = await http.post(
+        Uri.parse('$baseUrl/register'),
+        headers: _headers,
+        body: jsonEncode({
+          'platform': 'mobile',
+          'auth_data': {
+            'email': email,
+            'password': password,
+            'login': login,
+          }
+        }),
+      );
 
       final data = _parseResponse(response);
 
-      return UserModel.fromRegisterJson(
-        data,
-        name: name,
-        surname: surname,
+      return UserModel(
+        token: data['token'],
+        login: login,
         email: email,
       );
     });
@@ -66,120 +58,92 @@ class ApiService {
   static Future<UserModel> login({
     required String email,
     required String password,
-    String surname = '',
   }) async {
     return _handleRequest(() async {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/login'),
-            headers: _headers,
-            body: jsonEncode({
-              'platform': 'mobile',
-              'email': email,
-              'password': password,
-            }),
-          )
-          .timeout(const Duration(seconds: 15));
+      final response = await http.post(
+        Uri.parse('$baseUrl/login'),
+        headers: _headers,
+        body: jsonEncode({
+          'platform': 'mobile',
+          'email': email,
+          'password': password,
+        }),
+      );
 
       final data = _parseResponse(response);
 
-      return UserModel.fromLoginJson(
-        data,
+      return UserModel(
+        token: data['token'],
+        login: data['login'],
         email: email,
-        surname: surname,
       );
     });
   }
 
   static Future<BacktestResult> runBacktest({
-    required String token,
-    required String symbol,
-    required String timeframe,
-    required double startBalance,
-    required double feePercent,
-    required String strategyName,
-    required Map<String, dynamic> params,
-    bool needChart = true,
+  required String token,
+  required String symbol,
+  required String timeframe,
+  required double startBalance,
+  required double feePercent,
+  required String strategyName,
+  required Map<String, dynamic> params,
   }) async {
     return _handleRequest(() async {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/backtest'),
-            headers: _headers,
-            body: jsonEncode({
-              'platform': 'mobile',
-              'token': token,
-              'need_chart': needChart,
-              'settings': {
-                'symbol': symbol,
-                'timeframe': timeframe,
-                'start_balance': startBalance,
-                'fee_percent': feePercent,
-              },
-              'strategy': {
-                'name': strategyName,
-                'params': params,
-              },
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await http.post(
+        Uri.parse('$baseUrl/backtest'),
+        headers: _headers,
+        body: jsonEncode({
+          'platform': 'mobile',
+          'token': token,
+          'need_chart': true,
+          'settings': {
+            'symbol': symbol,
+            'timeframe': timeframe,
+            'start_balance': startBalance,
+            'fee_percent': feePercent,
+          },
+          'strategy': {
+            'name': strategyName,
+            'params': params,
+          }
+        }),
+      );
 
       final data = _parseResponse(response);
+
+      // 🔥 ВОТ ЭТА СТРОКА (лог сервера)
+      print('BACKTEST RESPONSE: $data');
+
       return BacktestResult.fromJson(data);
     });
   }
 
-  static Future<List<HistoryItem>> getHistory(
-    String token, {
-    int limit = 10,
-  }) async {
+  static Future<List<HistoryItem>> getHistory(String token) async {
     return _handleRequest(() async {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/history'),
-            headers: _headers,
-            body: jsonEncode({
-              'platform': 'mobile',
-              'token': token,
-              'limit': limit,
-            }),
-          )
-          .timeout(const Duration(seconds: 15));
+      final response = await http.post(
+        Uri.parse('$baseUrl/history'),
+        headers: _headers,
+        body: jsonEncode({
+          'platform': 'mobile',
+          'token': token,
+          'limit': 10,
+        }),
+      );
 
       final data = _parseResponse(response);
-      final rawList = data['data'];
 
-      if (rawList is! List) {
-        throw Exception('Поле data не является списком');
-      }
-
-      return rawList
-          .map((e) => HistoryItem.fromJson(Map<String, dynamic>.from(e)))
+      return (data['data'] as List)
+          .map((e) => HistoryItem.fromJson(e))
           .toList();
     });
   }
 
   static Map<String, dynamic> _parseResponse(http.Response response) {
-    if (response.body.isEmpty) {
-      throw Exception('Пустой ответ от сервера');
-    }
-
-    final decoded = jsonDecode(response.body);
-
-    if (decoded is! Map<String, dynamic>) {
-      throw Exception('Неверный формат ответа сервера');
-    }
-
-    final data = decoded;
+    final data = jsonDecode(response.body);
 
     if (data['status'] == 'error') {
-      throw Exception(data['message']?.toString() ?? 'Ошибка сервера');
-    }
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(
-        data['message']?.toString() ?? 'Ошибка сервера: ${response.statusCode}',
-      );
+      throw Exception(data['message']);
     }
 
     return data;

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'theme.dart';
+import 'models/user_model.dart';
 import 'screens/login_screen.dart';
 import 'screens/backtest_screen.dart';
 
@@ -24,7 +26,7 @@ class CryptoBacktestApp extends StatelessWidget {
 }
 
 class _SplashDecider extends StatefulWidget {
-  const _SplashDecider({super.key});
+  const _SplashDecider();
 
   @override
   State<_SplashDecider> createState() => _SplashDeciderState();
@@ -39,20 +41,36 @@ class _SplashDeciderState extends State<_SplashDecider> {
 
   Future<void> _check() async {
     await Future.delayed(const Duration(milliseconds: 600));
+
     final prefs = await SharedPreferences.getInstance();
+
     final token = prefs.getString('token') ?? '';
+    final login = prefs.getString('login') ?? 'Пользователь';
+    final email = prefs.getString('email') ?? '';
 
     if (!mounted) return;
 
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (_) =>
-          token.isNotEmpty
-              ? BacktestScreen(token: token)
-              : const LoginScreen(),
-    ),
-  );
+    if (token.isNotEmpty) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BacktestScreen(
+            user: UserModel(
+              token: token,
+              login: login,
+              email: email,
+            ),
+          ),
+        ),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LoginScreen(),
+        ),
+      );
+    }
   }
 
   @override
