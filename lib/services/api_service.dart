@@ -91,7 +91,7 @@ class ApiService {
   }) async {
     return _handleRequest(() async {
       final response = await http.post(
-        Uri.parse('$baseUrl/backtest'),
+        Uri.parse('$baseUrl/backtest/run'),
         headers: _headers,
         body: jsonEncode({
           'platform': 'mobile',

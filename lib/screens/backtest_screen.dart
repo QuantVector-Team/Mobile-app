@@ -56,6 +56,7 @@ class _BacktestScreenState extends State<BacktestScreen> {
   };
 
   final Map<String, TextEditingController> _controllers = {
+    'start_balance': TextEditingController(text: '1000'),
     'fast_period': TextEditingController(text: '10'),
     'slow_period': TextEditingController(text: '50'),
     'window_size': TextEditingController(text: '20'),
@@ -74,6 +75,12 @@ class _BacktestScreenState extends State<BacktestScreen> {
       controller.dispose();
     }
     super.dispose();
+  }
+
+  double _startBalance() {
+    return double.parse(
+      _controllers['start_balance']!.text.replaceAll(',', '.'),
+    );
   }
 
   String _serverStrategyName() {
@@ -128,6 +135,8 @@ class _BacktestScreenState extends State<BacktestScreen> {
 
   String? _validateStrategy() {
     try {
+      _startBalance();
+
       final params = _strategyParams();
 
       switch (_strategy) {
@@ -239,7 +248,7 @@ class _BacktestScreenState extends State<BacktestScreen> {
         token: widget.user.token,
         symbol: _symbol,
         timeframe: _timeframe,
-        startBalance: 1000.0,
+        startBalance: _startBalance(),
         feePercent: 0.1,
         strategyName: _serverStrategyName(),
         params: _strategyParams(),
@@ -608,6 +617,12 @@ class _BacktestScreenState extends State<BacktestScreen> {
                         if (v == null) return;
                         setState(() => _timeframe = v);
                       },
+                    ),
+                    const SizedBox(height: 12),
+                    _sectionLabel('Начальный баланс'),
+                    _numberField(
+                      label: 'startBalance',
+                      keyName: 'start_balance',
                     ),
                     const SizedBox(height: 12),
                     _sectionLabel('Стратегия'),
