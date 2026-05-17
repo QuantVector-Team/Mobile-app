@@ -38,47 +38,49 @@ class ApiService {
         body: jsonEncode({
           'platform': 'mobile',
           'auth_data': {
-            'email': email,
+            'email': email.trim(),
             'password': password,
-            'login': login,
+            'login': login.trim(),
           }
         }),
       );
 
       final data = _parseResponse(response);
 
-      return UserModel(
-        token: data['token'],
-        login: login,
-        email: email,
+      // Используем правильную фабрику из модели
+      return UserModel.fromRegisterJson(
+        data,
+        login: login.trim(),
+        email: email.trim(),
       );
     });
   }
 
   static Future<UserModel> login({
-    required String email,
-    required String password,
-  }) async {
-    return _handleRequest(() async {
-      final response = await http.post(
-        Uri.parse('$baseUrl/login'),
-        headers: _headers,
-        body: jsonEncode({
-          'platform': 'mobile',
-          'email': email,
+  required String email,
+  required String password,
+}) async {
+  return _handleRequest(() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/login'),
+      headers: _headers,
+      body: jsonEncode({
+        'platform': 'mobile',
+        'auth_data': {
+          'email': email.trim(),
           'password': password,
-        }),
-      );
+        }
+      }),
+    );
 
-      final data = _parseResponse(response);
+    final data = _parseResponse(response);
 
-      return UserModel(
-        token: data['token'],
-        login: data['login'],
-        email: email,
-      );
-    });
-  }
+    return UserModel.fromLoginJson(
+      data,
+      email: email,
+    );
+  });
+}
 
   static Future<BacktestResult> runBacktest({
   required String token,

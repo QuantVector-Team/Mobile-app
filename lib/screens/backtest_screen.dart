@@ -37,15 +37,10 @@ class _BacktestScreenState extends State<BacktestScreen> {
   };
 
   final Map<String, String> _timeframes = {
-    '1m': '1 минута',
-    '5m': '5 минут',
-    '15m': '15 минут',
     '1h': '1 час',
-    '4h': '4 часа',
     '1d': '1 день',
     '1w': '1 неделя',
-    '2w': '2 недели',
-    '1M': '1 месяц',
+    '1m': '1 месяц',
   };
 
   final Map<String, String> _strategies = {
